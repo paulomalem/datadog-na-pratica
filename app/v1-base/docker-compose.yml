@@ -1,0 +1,74 @@
+# Portas: loja-web 8080, pedidos-api 8081, estoque-api 8082 
+# Caso precise alterar as portas: mude com LOJA_WEB_PORT, PEDIDOS_API_PORT, ESTOQUE_API_PORT.
+services:
+  pedidos-db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: orders
+      POSTGRES_PASSWORD: orders
+      POSTGRES_DB: orders
+    volumes:
+      - ../../db/orders/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -h 127.0.0.1 -U orders -d orders"]
+      interval: 3s
+      timeout: 3s
+      retries: 30
+
+  estoque-db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: stock
+      POSTGRES_PASSWORD: stock
+      POSTGRES_DB: stock
+    volumes:
+      - ../../db/stock/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -h 127.0.0.1 -U stock -d stock"]
+      interval: 3s
+      timeout: 3s
+      retries: 60
+
+  estoque-api:
+    build: ./estoque-api
+    image: dd-lab/estoque-api:v1
+    ports:
+      - "${ESTOQUE_API_PORT:-8082}:3002"
+    environment:
+      PGHOST: estoque-db
+    depends_on:
+      estoque-db:
+        condition: service_healthy
+
+  pedidos-api:
+    build: ./pedidos-api
+    image: dd-lab/pedidos-api:v1
+    ports:
+      - "${PEDIDOS_API_PORT:-8081}:3001"
+    environment:
+      PGHOST: pedidos-db
+      ESTOQUE_API_URL: http://estoque-api:3002
+    depends_on:
+      pedidos-db:
+        condition: service_healthy
+      estoque-api:
+        condition: service_started
+
+  loja-web:
+    build: ./loja-web
+    image: dd-lab/loja-web:v1
+    ports:
+      - "${LOJA_WEB_PORT:-8080}:8080"
+    environment:
+      PEDIDOS_API_URL: http://localhost:${PEDIDOS_API_PORT:-8081}
+      ESTOQUE_API_URL: http://localhost:${ESTOQUE_API_PORT:-8082}
+
+  gerador-carga:
+    build: ./gerador-carga
+    image: dd-lab/gerador-carga:v1
+    profiles: ["load"]
+    environment:
+      TARGET: http://pedidos-api:3001
+      RATE: "2"
+    depends_on:
+      - pedidos-api

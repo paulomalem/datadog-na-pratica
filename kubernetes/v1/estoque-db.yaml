@@ -1,0 +1,67 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: estoque-db
+  namespace: lab
+  labels:
+    app: estoque-db
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: estoque-db
+  template:
+    metadata:
+      annotations:
+        ad.datadoghq.com/postgres.checks: |
+          {"postgres": {"init_config": {}, "instances": [{"host": "%%host%%", "port": 5432, "username": "datadog", "password": "%%env_DD_POSTGRES_PASSWORD%%"}]}}    
+      labels:
+        app: estoque-db
+    spec:
+      containers:
+        - name: postgres
+          image: postgres:16-alpine
+          ports:
+            - containerPort: 5432
+          env:
+            - name: POSTGRES_USER
+              value: stock
+            - name: POSTGRES_PASSWORD
+              value: stock
+            - name: POSTGRES_DB
+              value: stock
+          readinessProbe:
+            exec:
+              command:
+                - "pg_isready"
+                - "-h"
+                - "127.0.0.1"
+                - "-U"
+                - "stock"
+                - "-d"
+                - "stock"
+            periodSeconds: 3
+            failureThreshold: 100
+          resources:
+            requests:
+              cpu: 100m
+              memory: 256Mi
+          volumeMounts:
+            - name: init
+              mountPath: /docker-entrypoint-initdb.d
+      volumes:
+        - name: init
+          configMap:
+            name: stock-init
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: estoque-db
+  namespace: lab
+spec:
+  selector:
+    app: estoque-db
+  ports:
+    - port: 5432
+      targetPort: 5432

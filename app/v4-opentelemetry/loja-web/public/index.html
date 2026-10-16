@@ -1,0 +1,37 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Lab Loja Datadog</title>
+  <style>
+    body { font-family: system-ui, sans-serif; max-width: 760px; margin: 2rem auto; padding: 0 1rem; color: #1f2430; }
+    h1 { font-size: 1.4rem; }
+    .row { display: flex; flex-wrap: wrap; gap: .5rem; margin: 1rem 0; }
+    button { padding: .5rem .8rem; border: 1px solid #8a63d2; background: #fff; color: #4b2a8f; border-radius: 6px; cursor: pointer; }
+    button:hover { background: #f3edff; }
+    .docs { font-size: .85rem; color: #5b6270; }
+    pre { background: #f6f7f9; padding: 1rem; border-radius: 8px; min-height: 8rem; overflow: auto; font-size: .85rem; }
+  </style>
+</head>
+<body>
+  <h1>Lab Loja Datadog</h1>
+  <div class="row">
+    <button data-call="POST /orders">Criar pedido</button>
+    <button data-call="GET /orders?limit=5">Listar pedidos</button>
+    <button data-call="GET /orders/report?mode=batch">Relatório (em lote)</button>
+    <button data-call="GET /orders/report?mode=n1">Relatório (N+1)</button>
+  </div>
+  <div class="row">
+    <button data-call="GET /scenarios/slow-query?mode=slow">Consulta lenta</button>
+    <button data-call="GET /scenarios/slow-query?mode=fast">Consulta rápida</button>
+    <button data-call="GET /scenarios/slow-call?ms=800">Chamada demorada</button>
+    <button data-call="GET /scenarios/error?type=exception">Provocar erro</button>
+    <button id="js-error">Erro de JavaScript</button>
+  </div>
+  <pre id="out">Clique em um botão.</pre>
+  <p class="docs">Documentação das APIs (Swagger): <a id="docs-pedidos" href="#">pedidos-api</a> · <a id="docs-estoque" href="#">estoque-api</a></p>
+  <script src="/config.js"></script>
+  <script src="/app.js"></script>
+</body>
+</html>

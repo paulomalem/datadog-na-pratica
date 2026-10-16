@@ -1,0 +1,30 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: gerador-carga
+  namespace: lab
+  labels:
+    app: gerador-carga
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: gerador-carga
+  template:
+    metadata:
+      labels:
+        app: gerador-carga
+    spec:
+      containers:
+        - name: gerador-carga
+          image: dd-lab/gerador-carga:v4
+          imagePullPolicy: IfNotPresent
+          env:
+            - name: TARGET
+              value: "http://pedidos-api:3001"
+            - name: RATE
+              value: "2"
+          resources:
+            requests:
+              cpu: 20m
+              memory: 64Mi

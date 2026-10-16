@@ -1,0 +1,64 @@
+# A API Key vem de um Secret
+datadog:
+  apiKeyExistingSecret: datadog-secret
+  clusterName: lab-datadog
+
+  # Mesmo env das aplicações (DD_ENV e label tags.datadoghq.com/env)
+  tags:
+    - env:dev
+
+  kubelet:
+    tlsVerify: false
+
+  # No Kind os componentes do control-plane não expõem métricas como num cluster gerenciado;
+  # sem isto o `agent status` mostra 3 erros de inicialização (etcd, kube_controller_manager, kube_scheduler)
+  ignoreAutoConfig:
+    - etcd
+    - kube_controller_manager
+    - kube_scheduler
+
+  # Logs de todos os containers
+  logs:
+    enabled: true
+    containerCollectAll: true
+
+  # APM
+  apm:
+    portEnabled: true
+
+  # Adicionando monitoramento de rede (Network Performance Monitoring) para o cluster
+  networkMonitoring:
+    enabled: true
+
+  # DogStatsD
+  dogstatsd:
+    useHostPort: true
+    nonLocalTraffic: true
+
+  # Open Telemetry  
+  otlp:
+      receiver:
+        protocols:
+          http:
+            enabled: true
+            useHostPort: true
+
+agents:
+  # O control-plane do Kind tem taint; sem isto o Agent só roda nos workers (2 hosts em vez de 3)
+  # tolerations:
+  #   - key: node-role.kubernetes.io/control-plane
+  #     operator: Exists
+  #     effect: NoSchedule
+  nodeSelector:
+    datadog-npm: "true"
+
+  # Setando variável de ambiente para conexão com banco postgresql
+  containers:
+    agent:
+      env:
+        - name: DD_POSTGRES_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: postgres-monitoring
+              key: password
+

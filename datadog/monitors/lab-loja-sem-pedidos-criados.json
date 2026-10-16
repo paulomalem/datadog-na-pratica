@@ -1,0 +1,20 @@
+{
+  "name": "Lab Loja - sem pedidos criados",
+  "type": "query alert",
+  "query": "sum(last_10m):sum:lab.orders.created{env:dev}.as_count() < 1",
+  "message": "{{#is_alert}}🚨 **Nenhum pedido criado nos últimos 10 minutos** (env:dev).\nO `lab.orders.created` está em zero: o `gerador-carga`, o `loja-web` ou o `pedidos-api` podem estar parados.\n{{/is_alert}}\n{{#is_no_data}}🚨 **A métrica `lab.orders.created` parou de chegar** (env:dev) há 10 minutos.\nVerifique se o Agent e o DogStatsD estão coletando e se o `pedidos-api` está de pé.\n{{/is_no_data}}\n{{#is_recovery}}✅ Pedidos voltaram a ser criados.{{/is_recovery}}\n\nO que checar:\n1. `kubectl --context kind-lab-datadog -n lab get pods`\n2. Logs do `gerador-carga` e do `pedidos-api`\n3. `agent status` no pod do Agent do nó do `pedidos-api`\n4. Dashboard \"Lab Loja Datadog - Visão geral (v2)\"",
+  "tags": ["env:dev", "service:pedidos-api", "team:lab-loja"],
+  "priority": null,
+  "options": {
+    "thresholds": {
+      "critical": 1
+    },
+    "notify_no_data": true,
+    "no_data_timeframe": 10,
+    "notify_audit": false,
+    "require_full_window": false,
+    "include_tags": true,
+    "renotify_interval": 0,
+    "evaluation_delay": 60
+  }
+}

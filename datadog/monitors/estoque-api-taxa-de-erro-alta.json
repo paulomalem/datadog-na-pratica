@@ -1,0 +1,19 @@
+{
+  "name": "Lab Loja - estoque-api taxa de erro alta (APM)",
+  "type": "query alert",
+  "query": "sum(last_5m):( sum:trace.express.request.errors{env:dev,service:estoque-api}.as_count() / sum:trace.express.request.hits{env:dev,service:estoque-api}.as_count() ) * 100 > 5",
+  "message": "{{#is_alert}}🚨 **Taxa de erro do `estoque-api` acima de {{threshold}}%** (env:dev).\nValor nos últimos 5 minutos: **{{value}}%** (`trace.express.request.errors` ÷ `trace.express.request.hits`).\n{{/is_alert}}\n{{#is_recovery}}✅ Taxa de erro do `estoque-api` voltou para baixo de {{threshold}}%.{{/is_recovery}}\n\nO que checar:\n1. APM → Services → `estoque-api` → Resources com mais erros (filtre por `env:dev`)\n2. Traces com erro: `service:estoque-api env:dev status:error`\n3. Logs de erro do `estoque-api` e latência do `estoque-db`\n4. Dashboard \"Lab Loja Datadog - Visão geral (v2)\", seção SRE",
+  "tags": ["env:dev", "service:estoque-api", "team:lab-loja", "source:apm"],
+  "priority": null,
+  "options": {
+    "thresholds": {
+      "critical": 5
+    },
+    "notify_no_data": false,
+    "notify_audit": false,
+    "require_full_window": false,
+    "include_tags": true,
+    "renotify_interval": 0,
+    "evaluation_delay": 60
+  }
+}

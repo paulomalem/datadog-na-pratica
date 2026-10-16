@@ -1,0 +1,21 @@
+{
+  "name": "Lab Loja - pedidos em andamento alto",
+  "type": "query alert",
+  "query": "max(last_5m):max:lab.orders.in_flight{env:dev} by {service} > 20",
+  "message": "{{#is_warning}}⚠️ **Pedidos em andamento acima de 10** no `{{service.name}}` (env:dev).\nMáximo dos últimos 5 minutos: **{{value}}** (warning > {{warn_threshold}}).\n{{/is_warning}}\n{{#is_alert}}🚨 **Pedidos em andamento acima de {{threshold}}** no `{{service.name}}` (env:dev).\nMáximo dos últimos 5 minutos: **{{value}}**.\n{{/is_alert}}\n{{#is_recovery}}✅ Pedidos em andamento voltaram ao normal no `{{service.name}}`.{{/is_recovery}}\n\nO que checar: fila de pedidos acumulando, lentidão no `estoque-api` ou no `pedidos-db`, dashboard \"Lab Loja Datadog - Visão geral (v2)\".",
+  "tags": ["env:dev", "service:pedidos-api", "team:lab-loja"],
+  "priority": null,
+  "options": {
+    "thresholds": {
+      "warning": 10,
+      "critical": 20
+    },
+    "notify_audit": false,
+    "notify_no_data": false,
+    "require_full_window": false,
+    "include_tags": true,
+    "renotify_interval": 0,
+    "evaluation_delay": 60,
+    "new_group_delay": 60
+  }
+}

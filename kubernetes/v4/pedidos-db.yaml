@@ -1,0 +1,67 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: pedidos-db
+  namespace: lab
+  labels:
+    app: pedidos-db
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: pedidos-db
+  template:
+    metadata:
+      annotations:
+        ad.datadoghq.com/postgres.checks: |
+          {"postgres": {"init_config": {}, "instances": [{"host": "%%host%%", "port": 5432, "username": "datadog", "password": "%%env_DD_POSTGRES_PASSWORD%%"}]}}
+      labels:
+        app: pedidos-db
+    spec:
+      containers:
+        - name: postgres
+          image: postgres:16-alpine
+          ports:
+            - containerPort: 5432
+          env:
+            - name: POSTGRES_USER
+              value: orders
+            - name: POSTGRES_PASSWORD
+              value: orders
+            - name: POSTGRES_DB
+              value: orders
+          readinessProbe:
+            exec:
+              command:
+                - "pg_isready"
+                - "-h"
+                - "127.0.0.1"
+                - "-U"
+                - "orders"
+                - "-d"
+                - "orders"
+            periodSeconds: 3
+            failureThreshold: 60
+          resources:
+            requests:
+              cpu: 50m
+              memory: 128Mi
+          volumeMounts:
+            - name: init
+              mountPath: /docker-entrypoint-initdb.d
+      volumes:
+        - name: init
+          configMap:
+            name: orders-init
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: pedidos-db
+  namespace: lab
+spec:
+  selector:
+    app: pedidos-db
+  ports:
+    - port: 5432
+      targetPort: 5432

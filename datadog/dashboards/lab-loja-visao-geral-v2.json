@@ -1,0 +1,1510 @@
+{
+  "title": "Lab Loja Datadog - Visão geral (v2)",
+  "description": "Visão geral enriquecida: negócio (pedidos, conversão, SKUs), SRE (golden signals por serviço) e plataforma (banco, recursos, restarts).",
+  "layout_type": "ordered",
+  "reflow_type": "fixed",
+  "template_variables": [
+    {
+      "name": "env",
+      "prefix": "env",
+      "defaults": [
+        "dev"
+      ],
+      "available_values": []
+    }
+  ],
+  "widgets": [
+    {
+      "definition": {
+        "type": "note",
+        "content": "# 🛒 Lab Loja Datadog — Visão geral\n**🟢 Negócio** pedidos, conversão e produtos · **🔵 SRE** golden signals por serviço · **🟠 Plataforma** banco, filas e recursos do cluster  \nReferências usadas nas cores: disponibilidade ≥ 99% 🟢 / ≥ 95% 🟡, p95 < 250 ms 🟢 / ≥ 500 ms 🔴, apdex ≥ 0,9 🟢. Filtro de ambiente no topo (`env`).",
+        "background_color": "vivid_purple",
+        "font_size": "14",
+        "text_align": "left",
+        "vertical_align": "center",
+        "show_tick": false,
+        "tick_pos": "50%",
+        "tick_edge": "left",
+        "has_padding": true
+      },
+      "layout": {
+        "x": 0,
+        "y": 0,
+        "width": 12,
+        "height": 2
+      }
+    },
+    {
+      "definition": {
+        "title": "🟢 Negócio — pedidos e estoque",
+        "type": "group",
+        "layout_type": "ordered",
+        "background_color": "vivid_green",
+        "show_title": true,
+        "widgets": [
+          {
+            "definition": {
+              "title": "Pedidos no período",
+              "title_size": "16",
+              "title_align": "left",
+              "type": "query_value",
+              "autoscale": false,
+              "precision": 0,
+              "requests": [
+                {
+                  "response_format": "scalar",
+                  "queries": [
+                    {
+                      "data_source": "metrics",
+                      "name": "t",
+                      "query": "sum:lab.orders.created{env:$env.value}.as_count()",
+                      "aggregator": "sum"
+                    }
+                  ],
+                  "formulas": [
+                    {
+                      "formula": "t"
+                    }
+                  ]
+                }
+              ]
+            },
+            "layout": {
+              "x": 0,
+              "y": 0,
+              "width": 3,
+              "height": 2
+            }
+          },
+          {
+            "definition": {
+              "title": "Taxa de sucesso dos pedidos",
+              "title_size": "16",
+              "title_align": "left",
+              "type": "query_value",
+              "autoscale": false,
+              "precision": 1,
+              "requests": [
+                {
+                  "response_format": "scalar",
+                  "queries": [
+                    {
+                      "data_source": "metrics",
+                      "name": "c",
+                      "query": "sum:lab.orders.created{env:$env.value,status:confirmed}.as_count()",
+                      "aggregator": "sum"
+                    },
+                    {
+                      "data_source": "metrics",
+                      "name": "t",
+                      "query": "sum:lab.orders.created{env:$env.value}.as_count()",
+                      "aggregator": "sum"
+                    }
+                  ],
+                  "formulas": [
+                    {
+                      "formula": "100 * c / t"
+                    }
+                  ],
+                  "conditional_formats": [
+                    {
+                      "comparator": ">=",
+                      "value": 97,
+                      "palette": "white_on_green"
+                    },
+                    {
+                      "comparator": ">=",
+                      "value": 90,
+                      "palette": "white_on_yellow"
+                    },
+                    {
+                      "comparator": "<",
+                      "value": 90,
+                      "palette": "white_on_red"
+                    }
+                  ]
+                }
+              ],
+              "custom_unit": "%"
+            },
+            "layout": {
+              "x": 3,
+              "y": 0,
+              "width": 3,
+              "height": 2
+            }
+          },
+          {
+            "definition": {
+              "title": "Pedidos com falha",
+              "title_size": "16",
+              "title_align": "left",
+              "type": "query_value",
+              "autoscale": false,
+              "precision": 0,
+              "requests": [
+                {
+                  "response_format": "scalar",
+                  "queries": [
+                    {
+                      "data_source": "metrics",
+                      "name": "f",
+                      "query": "sum:lab.orders.created{env:$env.value,status:failed}.as_count()",
+                      "aggregator": "sum"
+                    }
+                  ],
+                  "formulas": [
+                    {
+                      "formula": "f"
+                    }
+                  ],
+                  "conditional_formats": [
+                    {
+                      "comparator": ">",
+                      "value": 0,
+                      "palette": "white_on_red"
+                    },
+                    {
+                      "comparator": "<=",
+                      "value": 0,
+                      "palette": "white_on_green"
+                    }
+                  ]
+                }
+              ]
+            },
+            "layout": {
+              "x": 6,
+              "y": 0,
+              "width": 3,
+              "height": 2
+            }
+          },
+          {
+            "definition": {
+              "title": "Reservas de estoque ok",
+              "title_size": "16",
+              "title_align": "left",
+              "type": "query_value",
+              "autoscale": false,
+              "precision": 1,
+              "requests": [
+                {
+                  "response_format": "scalar",
+                  "queries": [
+                    {
+                      "data_source": "metrics",
+                      "name": "o",
+                      "query": "sum:lab.stock.reservations{env:$env.value,result:ok}.as_count()",
+                      "aggregator": "sum"
+                    },
+                    {
+                      "data_source": "metrics",
+                      "name": "t",
+                      "query": "sum:lab.stock.reservations{env:$env.value}.as_count()",
+                      "aggregator": "sum"
+                    }
+                  ],
+                  "formulas": [
+                    {
+                      "formula": "100 * o / t"
+                    }
+                  ],
+                  "conditional_formats": [
+                    {
+                      "comparator": ">=",
+                      "value": 97,
+                      "palette": "white_on_green"
+                    },
+                    {
+                      "comparator": ">=",
+                      "value": 90,
+                      "palette": "white_on_yellow"
+                    },
+                    {
+                      "comparator": "<",
+                      "value": 90,
+                      "palette": "white_on_red"
+                    }
+                  ]
+                }
+              ],
+              "custom_unit": "%"
+            },
+            "layout": {
+              "x": 9,
+              "y": 0,
+              "width": 3,
+              "height": 2
+            }
+          },
+          {
+            "definition": {
+              "title": "Pedidos por status (empilhado)",
+              "title_size": "16",
+              "title_align": "left",
+              "type": "timeseries",
+              "show_legend": true,
+              "legend_layout": "auto",
+              "legend_columns": [
+                "sum",
+                "value"
+              ],
+              "requests": [
+                {
+                  "response_format": "timeseries",
+                  "queries": [
+                    {
+                      "data_source": "metrics",
+                      "name": "p",
+                      "query": "sum:lab.orders.created{env:$env.value} by {status}.as_count()"
+                    }
+                  ],
+                  "formulas": [
+                    {
+                      "formula": "p"
+                    }
+                  ],
+                  "style": {
+                    "palette": "cool",
+                    "line_type": "solid",
+                    "line_width": "normal"
+                  },
+                  "display_type": "bars"
+                }
+              ]
+            },
+            "layout": {
+              "x": 0,
+              "y": 2,
+              "width": 6,
+              "height": 3
+            }
+          },
+          {
+            "definition": {
+              "title": "Taxa de sucesso dos pedidos ao longo do tempo (%)",
+              "title_size": "16",
+              "title_align": "left",
+              "type": "timeseries",
+              "show_legend": true,
+              "legend_layout": "auto",
+              "legend_columns": [
+                "avg",
+                "min",
+                "value"
+              ],
+              "requests": [
+                {
+                  "response_format": "timeseries",
+                  "queries": [
+                    {
+                      "data_source": "metrics",
+                      "name": "c",
+                      "query": "sum:lab.orders.created{env:$env.value,status:confirmed}.as_count()"
+                    },
+                    {
+                      "data_source": "metrics",
+                      "name": "t",
+                      "query": "sum:lab.orders.created{env:$env.value}.as_count()"
+                    }
+                  ],
+                  "formulas": [
+                    {
+                      "formula": "100 * c / t"
+                    }
+                  ],
+                  "style": {
+                    "palette": "green",
+                    "line_type": "solid",
+                    "line_width": "normal"
+                  },
+                  "display_type": "line"
+                }
+              ],
+              "yaxis": {
+                "label": "%",
+                "min": "0",
+                "max": "100",
+                "include_zero": true,
+                "scale": "linear"
+              },
+              "markers": [
+                {
+                  "value": "y = 90",
+                  "display_type": "error dashed"
+                }
+              ]
+            },
+            "layout": {
+              "x": 6,
+              "y": 2,
+              "width": 6,
+              "height": 3
+            }
+          },
+          {
+            "definition": {
+              "title": "Top 5 SKUs mais vendidos (reservas ok)",
+              "title_size": "16",
+              "title_align": "left",
+              "type": "toplist",
+              "requests": [
+                {
+                  "response_format": "scalar",
+                  "queries": [
+                    {
+                      "data_source": "metrics",
+                      "name": "q",
+                      "query": "sum:lab.stock.reservations{env:$env.value,result:ok} by {sku}.as_count()",
+                      "aggregator": "sum"
+                    }
+                  ],
+                  "formulas": [
+                    {
+                      "formula": "q",
+                      "limit": {
+                        "count": 5,
+                        "order": "desc"
+                      }
+                    }
+                  ],
+                  "style": {
+                    "palette": "green"
+                  }
+                }
+              ]
+            },
+            "layout": {
+              "x": 0,
+              "y": 5,
+              "width": 4,
+              "height": 3
+            }
+          },
+          {
+            "definition": {
+              "title": "Top 5 SKUs com mais falhas de reserva",
+              "title_size": "16",
+              "title_align": "left",
+              "type": "toplist",
+              "requests": [
+                {
+                  "response_format": "scalar",
+                  "queries": [
+                    {
+                      "data_source": "metrics",
+                      "name": "q",
+                      "query": "sum:lab.stock.reservations{env:$env.value,result:error} by {sku}.as_count()",
+                      "aggregator": "sum"
+                    }
+                  ],
+                  "formulas": [
+                    {
+                      "formula": "q",
+                      "limit": {
+                        "count": 5,
+                        "order": "desc"
+                      }
+                    }
+                  ],
+                  "style": {
+                    "palette": "warm"
+                  }
+                }
+              ]
+            },
+            "layout": {
+              "x": 4,
+              "y": 5,
+              "width": 4,
+              "height": 3
+            }
+          },
+          {
+            "definition": {
+              "title": "Tempo de processamento (ms)",
+              "title_size": "16",
+              "title_align": "left",
+              "type": "timeseries",
+              "show_legend": true,
+              "legend_layout": "auto",
+              "legend_columns": [
+                "avg",
+                "max",
+                "value"
+              ],
+              "requests": [
+                {
+                  "response_format": "timeseries",
+                  "queries": [
+                    {
+                      "data_source": "metrics",
+                      "name": "ped",
+                      "query": "avg:lab.orders.processing_ms{env:$env.value}"
+                    },
+                    {
+                      "data_source": "metrics",
+                      "name": "est",
+                      "query": "avg:lab.stock.reserve_ms{env:$env.value}"
+                    }
+                  ],
+                  "formulas": [
+                    {
+                      "formula": "ped",
+                      "alias": "Confirmar pedido"
+                    },
+                    {
+                      "formula": "est",
+                      "alias": "Reservar estoque"
+                    }
+                  ],
+                  "style": {
+                    "palette": "purple",
+                    "line_type": "solid",
+                    "line_width": "normal"
+                  },
+                  "display_type": "line"
+                }
+              ]
+            },
+            "layout": {
+              "x": 8,
+              "y": 5,
+              "width": 4,
+              "height": 3
+            }
+          }
+        ]
+      },
+      "layout": {
+        "x": 0,
+        "y": 2,
+        "width": 12,
+        "height": 9
+      }
+    },
+    {
+      "definition": {
+        "title": "🔵 SRE — golden signals por serviço",
+        "type": "group",
+        "layout_type": "ordered",
+        "background_color": "vivid_blue",
+        "show_title": true,
+        "widgets": [
+          {
+            "definition": {
+              "title": "pedidos-api · disponibilidade",
+              "title_size": "16",
+              "title_align": "left",
+              "type": "query_value",
+              "autoscale": false,
+              "precision": 2,
+              "requests": [
+                {
+                  "response_format": "scalar",
+                  "queries": [
+                    {
+                      "data_source": "metrics",
+                      "name": "e",
+                      "query": "sum:trace.express.request.errors{env:$env.value,service:pedidos-api}.as_count()",
+                      "aggregator": "sum"
+                    },
+                    {
+                      "data_source": "metrics",
+                      "name": "h",
+                      "query": "sum:trace.express.request.hits{env:$env.value,service:pedidos-api}.as_count()",
+                      "aggregator": "sum"
+                    }
+                  ],
+                  "formulas": [
+                    {
+                      "formula": "100 - 100 * e / h"
+                    }
+                  ],
+                  "conditional_formats": [
+                    {
+                      "comparator": ">=",
+                      "value": 99,
+                      "palette": "white_on_green"
+                    },
+                    {
+                      "comparator": ">=",
+                      "value": 95,
+                      "palette": "white_on_yellow"
+                    },
+                    {
+                      "comparator": "<",
+                      "value": 95,
+                      "palette": "white_on_red"
+                    }
+                  ]
+                }
+              ],
+              "custom_unit": "%"
+            },
+            "layout": {
+              "x": 0,
+              "y": 0,
+              "width": 3,
+              "height": 2
+            }
+          },
+          {
+            "definition": {
+              "title": "pedidos-api · latência p95",
+              "title_size": "16",
+              "title_align": "left",
+              "type": "query_value",
+              "autoscale": false,
+              "precision": 0,
+              "requests": [
+                {
+                  "response_format": "scalar",
+                  "queries": [
+                    {
+                      "data_source": "metrics",
+                      "name": "p",
+                      "query": "p95:trace.express.request{env:$env.value,service:pedidos-api}",
+                      "aggregator": "avg"
+                    }
+                  ],
+                  "formulas": [
+                    {
+                      "formula": "p * 1000"
+                    }
+                  ],
+                  "conditional_formats": [
+                    {
+                      "comparator": ">=",
+                      "value": 500,
+                      "palette": "white_on_red"
+                    },
+                    {
+                      "comparator": ">=",
+                      "value": 250,
+                      "palette": "white_on_yellow"
+                    },
+                    {
+                      "comparator": "<",
+                      "value": 250,
+                      "palette": "white_on_green"
+                    }
+                  ]
+                }
+              ],
+              "custom_unit": "ms"
+            },
+            "layout": {
+              "x": 3,
+              "y": 0,
+              "width": 3,
+              "height": 2
+            }
+          },
+          {
+            "definition": {
+              "title": "pedidos-api · requests/s",
+              "title_size": "16",
+              "title_align": "left",
+              "type": "query_value",
+              "autoscale": false,
+              "precision": 1,
+              "requests": [
+                {
+                  "response_format": "scalar",
+                  "queries": [
+                    {
+                      "data_source": "metrics",
+                      "name": "h",
+                      "query": "sum:trace.express.request.hits{env:$env.value,service:pedidos-api}.as_rate()",
+                      "aggregator": "avg"
+                    }
+                  ],
+                  "formulas": [
+                    {
+                      "formula": "h"
+                    }
+                  ]
+                }
+              ],
+              "custom_unit": "req/s"
+            },
+            "layout": {
+              "x": 6,
+              "y": 0,
+              "width": 3,
+              "height": 2
+            }
+          },
+          {
+            "definition": {
+              "title": "pedidos-api · apdex",
+              "title_size": "16",
+              "title_align": "left",
+              "type": "query_value",
+              "autoscale": false,
+              "precision": 2,
+              "requests": [
+                {
+                  "response_format": "scalar",
+                  "queries": [
+                    {
+                      "data_source": "metrics",
+                      "name": "a",
+                      "query": "avg:trace.express.request.apdex{env:$env.value,service:pedidos-api}",
+                      "aggregator": "avg"
+                    }
+                  ],
+                  "formulas": [
+                    {
+                      "formula": "a"
+                    }
+                  ],
+                  "conditional_formats": [
+                    {
+                      "comparator": ">=",
+                      "value": 0.9,
+                      "palette": "white_on_green"
+                    },
+                    {
+                      "comparator": ">=",
+                      "value": 0.7,
+                      "palette": "white_on_yellow"
+                    },
+                    {
+                      "comparator": "<",
+                      "value": 0.7,
+                      "palette": "white_on_red"
+                    }
+                  ]
+                }
+              ]
+            },
+            "layout": {
+              "x": 9,
+              "y": 0,
+              "width": 3,
+              "height": 2
+            }
+          },
+          {
+            "definition": {
+              "title": "estoque-api · disponibilidade",
+              "title_size": "16",
+              "title_align": "left",
+              "type": "query_value",
+              "autoscale": false,
+              "precision": 2,
+              "requests": [
+                {
+                  "response_format": "scalar",
+                  "queries": [
+                    {
+                      "data_source": "metrics",
+                      "name": "e",
+                      "query": "sum:trace.express.request.errors{env:$env.value,service:estoque-api}.as_count()",
+                      "aggregator": "sum"
+                    },
+                    {
+                      "data_source": "metrics",
+                      "name": "h",
+                      "query": "sum:trace.express.request.hits{env:$env.value,service:estoque-api}.as_count()",
+                      "aggregator": "sum"
+                    }
+                  ],
+                  "formulas": [
+                    {
+                      "formula": "100 - 100 * e / h"
+                    }
+                  ],
+                  "conditional_formats": [
+                    {
+                      "comparator": ">=",
+                      "value": 99,
+                      "palette": "white_on_green"
+                    },
+                    {
+                      "comparator": ">=",
+                      "value": 95,
+                      "palette": "white_on_yellow"
+                    },
+                    {
+                      "comparator": "<",
+                      "value": 95,
+                      "palette": "white_on_red"
+                    }
+                  ]
+                }
+              ],
+              "custom_unit": "%"
+            },
+            "layout": {
+              "x": 0,
+              "y": 2,
+              "width": 3,
+              "height": 2
+            }
+          },
+          {
+            "definition": {
+              "title": "estoque-api · latência p95",
+              "title_size": "16",
+              "title_align": "left",
+              "type": "query_value",
+              "autoscale": false,
+              "precision": 0,
+              "requests": [
+                {
+                  "response_format": "scalar",
+                  "queries": [
+                    {
+                      "data_source": "metrics",
+                      "name": "p",
+                      "query": "p95:trace.express.request{env:$env.value,service:estoque-api}",
+                      "aggregator": "avg"
+                    }
+                  ],
+                  "formulas": [
+                    {
+                      "formula": "p * 1000"
+                    }
+                  ],
+                  "conditional_formats": [
+                    {
+                      "comparator": ">=",
+                      "value": 500,
+                      "palette": "white_on_red"
+                    },
+                    {
+                      "comparator": ">=",
+                      "value": 250,
+                      "palette": "white_on_yellow"
+                    },
+                    {
+                      "comparator": "<",
+                      "value": 250,
+                      "palette": "white_on_green"
+                    }
+                  ]
+                }
+              ],
+              "custom_unit": "ms"
+            },
+            "layout": {
+              "x": 3,
+              "y": 2,
+              "width": 3,
+              "height": 2
+            }
+          },
+          {
+            "definition": {
+              "title": "estoque-api · requests/s",
+              "title_size": "16",
+              "title_align": "left",
+              "type": "query_value",
+              "autoscale": false,
+              "precision": 1,
+              "requests": [
+                {
+                  "response_format": "scalar",
+                  "queries": [
+                    {
+                      "data_source": "metrics",
+                      "name": "h",
+                      "query": "sum:trace.express.request.hits{env:$env.value,service:estoque-api}.as_rate()",
+                      "aggregator": "avg"
+                    }
+                  ],
+                  "formulas": [
+                    {
+                      "formula": "h"
+                    }
+                  ]
+                }
+              ],
+              "custom_unit": "req/s"
+            },
+            "layout": {
+              "x": 6,
+              "y": 2,
+              "width": 3,
+              "height": 2
+            }
+          },
+          {
+            "definition": {
+              "title": "estoque-api · apdex",
+              "title_size": "16",
+              "title_align": "left",
+              "type": "query_value",
+              "autoscale": false,
+              "precision": 2,
+              "requests": [
+                {
+                  "response_format": "scalar",
+                  "queries": [
+                    {
+                      "data_source": "metrics",
+                      "name": "a",
+                      "query": "avg:trace.express.request.apdex{env:$env.value,service:estoque-api}",
+                      "aggregator": "avg"
+                    }
+                  ],
+                  "formulas": [
+                    {
+                      "formula": "a"
+                    }
+                  ],
+                  "conditional_formats": [
+                    {
+                      "comparator": ">=",
+                      "value": 0.9,
+                      "palette": "white_on_green"
+                    },
+                    {
+                      "comparator": ">=",
+                      "value": 0.7,
+                      "palette": "white_on_yellow"
+                    },
+                    {
+                      "comparator": "<",
+                      "value": 0.7,
+                      "palette": "white_on_red"
+                    }
+                  ]
+                }
+              ]
+            },
+            "layout": {
+              "x": 9,
+              "y": 2,
+              "width": 3,
+              "height": 2
+            }
+          },
+          {
+            "definition": {
+              "title": "Tráfego · requests por segundo",
+              "title_size": "16",
+              "title_align": "left",
+              "type": "timeseries",
+              "show_legend": true,
+              "legend_layout": "auto",
+              "legend_columns": [
+                "avg",
+                "max",
+                "value"
+              ],
+              "requests": [
+                {
+                  "response_format": "timeseries",
+                  "queries": [
+                    {
+                      "data_source": "metrics",
+                      "name": "r",
+                      "query": "sum:trace.express.request.hits{env:$env.value} by {service}.as_rate()"
+                    }
+                  ],
+                  "formulas": [
+                    {
+                      "formula": "r"
+                    }
+                  ],
+                  "style": {
+                    "palette": "dog_classic",
+                    "line_type": "solid",
+                    "line_width": "normal"
+                  },
+                  "display_type": "area"
+                }
+              ]
+            },
+            "layout": {
+              "x": 0,
+              "y": 4,
+              "width": 6,
+              "height": 3
+            }
+          },
+          {
+            "definition": {
+              "title": "Latência · p95 e p99 (s)",
+              "title_size": "16",
+              "title_align": "left",
+              "type": "timeseries",
+              "show_legend": true,
+              "legend_layout": "auto",
+              "legend_columns": [
+                "avg",
+                "max",
+                "value"
+              ],
+              "requests": [
+                {
+                  "response_format": "timeseries",
+                  "queries": [
+                    {
+                      "data_source": "metrics",
+                      "name": "p95",
+                      "query": "p95:trace.express.request{env:$env.value} by {service}"
+                    },
+                    {
+                      "data_source": "metrics",
+                      "name": "p99",
+                      "query": "p99:trace.express.request{env:$env.value} by {service}"
+                    }
+                  ],
+                  "formulas": [
+                    {
+                      "formula": "p95"
+                    },
+                    {
+                      "formula": "p99"
+                    }
+                  ],
+                  "style": {
+                    "palette": "warm",
+                    "line_type": "solid",
+                    "line_width": "normal"
+                  },
+                  "display_type": "line"
+                }
+              ],
+              "yaxis": {
+                "label": "segundos",
+                "include_zero": true,
+                "scale": "linear"
+              },
+              "markers": [
+                {
+                  "value": "y = 0.5",
+                  "display_type": "error dashed"
+                }
+              ]
+            },
+            "layout": {
+              "x": 6,
+              "y": 4,
+              "width": 6,
+              "height": 3
+            }
+          },
+          {
+            "definition": {
+              "title": "Erros · taxa por serviço (%)",
+              "title_size": "16",
+              "title_align": "left",
+              "type": "timeseries",
+              "show_legend": true,
+              "legend_layout": "auto",
+              "legend_columns": [
+                "avg",
+                "max",
+                "value"
+              ],
+              "requests": [
+                {
+                  "response_format": "timeseries",
+                  "queries": [
+                    {
+                      "data_source": "metrics",
+                      "name": "e",
+                      "query": "sum:trace.express.request.errors{env:$env.value} by {service}.as_count()"
+                    },
+                    {
+                      "data_source": "metrics",
+                      "name": "h",
+                      "query": "sum:trace.express.request.hits{env:$env.value} by {service}.as_count()"
+                    }
+                  ],
+                  "formulas": [
+                    {
+                      "formula": "100 * e / h"
+                    }
+                  ],
+                  "style": {
+                    "palette": "warm",
+                    "line_type": "solid",
+                    "line_width": "normal"
+                  },
+                  "display_type": "line"
+                }
+              ],
+              "yaxis": {
+                "label": "%",
+                "include_zero": true,
+                "scale": "linear"
+              },
+              "markers": [
+                {
+                  "value": "y = 5",
+                  "display_type": "error dashed"
+                },
+                {
+                  "value": "y = 1",
+                  "display_type": "warning dashed"
+                }
+              ]
+            },
+            "layout": {
+              "x": 0,
+              "y": 7,
+              "width": 6,
+              "height": 3
+            }
+          },
+          {
+            "definition": {
+              "title": "Respostas HTTP por classe (empilhado)",
+              "title_size": "16",
+              "title_align": "left",
+              "type": "timeseries",
+              "show_legend": true,
+              "legend_layout": "auto",
+              "legend_columns": [
+                "sum",
+                "value"
+              ],
+              "requests": [
+                {
+                  "response_format": "timeseries",
+                  "queries": [
+                    {
+                      "data_source": "metrics",
+                      "name": "s",
+                      "query": "sum:trace.express.request.hits.by_http_status{env:$env.value} by {http.status_class}.as_count()"
+                    }
+                  ],
+                  "formulas": [
+                    {
+                      "formula": "s"
+                    }
+                  ],
+                  "style": {
+                    "palette": "semantic",
+                    "line_type": "solid",
+                    "line_width": "normal"
+                  },
+                  "display_type": "bars"
+                }
+              ]
+            },
+            "layout": {
+              "x": 6,
+              "y": 7,
+              "width": 6,
+              "height": 3
+            }
+          },
+          {
+            "definition": {
+              "title": "Resumo por serviço no período",
+              "title_size": "16",
+              "title_align": "left",
+              "type": "query_table",
+              "requests": [
+                {
+                  "response_format": "scalar",
+                  "queries": [
+                    {
+                      "data_source": "metrics",
+                      "name": "h",
+                      "query": "sum:trace.express.request.hits{env:$env.value} by {service}.as_count()",
+                      "aggregator": "sum"
+                    },
+                    {
+                      "data_source": "metrics",
+                      "name": "e",
+                      "query": "sum:trace.express.request.errors{env:$env.value} by {service}.as_count()",
+                      "aggregator": "sum"
+                    },
+                    {
+                      "data_source": "metrics",
+                      "name": "p95",
+                      "query": "p95:trace.express.request{env:$env.value} by {service}",
+                      "aggregator": "avg"
+                    }
+                  ],
+                  "formulas": [
+                    {
+                      "formula": "h",
+                      "alias": "Requests"
+                    },
+                    {
+                      "formula": "e",
+                      "alias": "Erros"
+                    },
+                    {
+                      "formula": "100 * e / h",
+                      "alias": "Erro (%)",
+                      "cell_display_mode": "bar"
+                    },
+                    {
+                      "formula": "p95 * 1000",
+                      "alias": "p95 (ms)"
+                    }
+                  ]
+                }
+              ]
+            },
+            "layout": {
+              "x": 0,
+              "y": 10,
+              "width": 12,
+              "height": 2
+            }
+          },
+          {
+            "definition": {
+              "title": "Logs de erro (todos os serviços do ambiente)",
+              "title_size": "16",
+              "title_align": "left",
+              "type": "list_stream",
+              "requests": [
+                {
+                  "response_format": "event_list",
+                  "query": {
+                    "data_source": "logs_stream",
+                    "query_string": "env:$env.value status:error",
+                    "indexes": [],
+                    "storage": "hot",
+                    "sort": {
+                      "column": "time",
+                      "order": "desc"
+                    }
+                  },
+                  "columns": [
+                    {
+                      "field": "status_line",
+                      "width": "auto"
+                    },
+                    {
+                      "field": "timestamp",
+                      "width": "auto"
+                    },
+                    {
+                      "field": "service",
+                      "width": "auto"
+                    },
+                    {
+                      "field": "content",
+                      "width": "compact"
+                    }
+                  ]
+                }
+              ]
+            },
+            "layout": {
+              "x": 0,
+              "y": 12,
+              "width": 12,
+              "height": 4
+            }
+          }
+        ]
+      },
+      "layout": {
+        "x": 0,
+        "y": 11,
+        "width": 12,
+        "height": 17
+      }
+    },
+    {
+      "definition": {
+        "title": "🟠 Plataforma — banco, filas e recursos",
+        "type": "group",
+        "layout_type": "ordered",
+        "background_color": "vivid_orange",
+        "show_title": true,
+        "widgets": [
+          {
+            "definition": {
+              "title": "PostgreSQL · latência p95 das queries (s)",
+              "title_size": "16",
+              "title_align": "left",
+              "type": "timeseries",
+              "show_legend": true,
+              "legend_layout": "auto",
+              "legend_columns": [
+                "avg",
+                "max",
+                "value"
+              ],
+              "requests": [
+                {
+                  "response_format": "timeseries",
+                  "queries": [
+                    {
+                      "data_source": "metrics",
+                      "name": "q",
+                      "query": "p95:trace.pg.query{env:$env.value} by {service}"
+                    }
+                  ],
+                  "formulas": [
+                    {
+                      "formula": "q"
+                    }
+                  ],
+                  "style": {
+                    "palette": "orange",
+                    "line_type": "solid",
+                    "line_width": "normal"
+                  },
+                  "display_type": "line"
+                }
+              ]
+            },
+            "layout": {
+              "x": 0,
+              "y": 0,
+              "width": 4,
+              "height": 3
+            }
+          },
+          {
+            "definition": {
+              "title": "PostgreSQL · queries por segundo",
+              "title_size": "16",
+              "title_align": "left",
+              "type": "timeseries",
+              "show_legend": true,
+              "legend_layout": "auto",
+              "legend_columns": [
+                "avg",
+                "max",
+                "value"
+              ],
+              "requests": [
+                {
+                  "response_format": "timeseries",
+                  "queries": [
+                    {
+                      "data_source": "metrics",
+                      "name": "q",
+                      "query": "sum:trace.pg.query.hits{env:$env.value} by {service}.as_rate()"
+                    }
+                  ],
+                  "formulas": [
+                    {
+                      "formula": "q"
+                    }
+                  ],
+                  "style": {
+                    "palette": "orange",
+                    "line_type": "solid",
+                    "line_width": "normal"
+                  },
+                  "display_type": "area"
+                }
+              ]
+            },
+            "layout": {
+              "x": 4,
+              "y": 0,
+              "width": 4,
+              "height": 3
+            }
+          },
+          {
+            "definition": {
+              "title": "Pedidos em processamento (in-flight)",
+              "title_size": "16",
+              "title_align": "left",
+              "type": "timeseries",
+              "show_legend": true,
+              "legend_layout": "auto",
+              "legend_columns": [
+                "avg",
+                "max",
+                "value"
+              ],
+              "requests": [
+                {
+                  "response_format": "timeseries",
+                  "queries": [
+                    {
+                      "data_source": "metrics",
+                      "name": "i",
+                      "query": "max:lab.orders.in_flight{env:$env.value} by {service}"
+                    }
+                  ],
+                  "formulas": [
+                    {
+                      "formula": "i"
+                    }
+                  ],
+                  "style": {
+                    "palette": "cool",
+                    "line_type": "solid",
+                    "line_width": "normal"
+                  },
+                  "display_type": "area"
+                }
+              ]
+            },
+            "layout": {
+              "x": 8,
+              "y": 0,
+              "width": 4,
+              "height": 3
+            }
+          },
+          {
+            "definition": {
+              "title": "CPU por serviço (millicores)",
+              "title_size": "16",
+              "title_align": "left",
+              "type": "timeseries",
+              "show_legend": true,
+              "legend_layout": "auto",
+              "legend_columns": [
+                "avg",
+                "max",
+                "value"
+              ],
+              "requests": [
+                {
+                  "response_format": "timeseries",
+                  "queries": [
+                    {
+                      "data_source": "metrics",
+                      "name": "cpu",
+                      "query": "avg:kubernetes.cpu.usage.total{kube_namespace:lab} by {kube_service}"
+                    }
+                  ],
+                  "formulas": [
+                    {
+                      "formula": "cpu / 1000000"
+                    }
+                  ],
+                  "style": {
+                    "palette": "purple",
+                    "line_type": "solid",
+                    "line_width": "normal"
+                  },
+                  "display_type": "line"
+                }
+              ],
+              "yaxis": {
+                "label": "m",
+                "include_zero": true,
+                "scale": "linear"
+              }
+            },
+            "layout": {
+              "x": 0,
+              "y": 3,
+              "width": 4,
+              "height": 3
+            }
+          },
+          {
+            "definition": {
+              "title": "Memória por serviço (MiB)",
+              "title_size": "16",
+              "title_align": "left",
+              "type": "timeseries",
+              "show_legend": true,
+              "legend_layout": "auto",
+              "legend_columns": [
+                "avg",
+                "max",
+                "value"
+              ],
+              "requests": [
+                {
+                  "response_format": "timeseries",
+                  "queries": [
+                    {
+                      "data_source": "metrics",
+                      "name": "mem",
+                      "query": "avg:kubernetes.memory.working_set{kube_namespace:lab} by {kube_service}"
+                    }
+                  ],
+                  "formulas": [
+                    {
+                      "formula": "mem / 1048576"
+                    }
+                  ],
+                  "style": {
+                    "palette": "purple",
+                    "line_type": "solid",
+                    "line_width": "normal"
+                  },
+                  "display_type": "line"
+                }
+              ],
+              "yaxis": {
+                "label": "MiB",
+                "include_zero": true,
+                "scale": "linear"
+              }
+            },
+            "layout": {
+              "x": 4,
+              "y": 3,
+              "width": 4,
+              "height": 3
+            }
+          },
+          {
+            "definition": {
+              "title": "Restarts de containers (namespace lab)",
+              "title_size": "16",
+              "title_align": "left",
+              "type": "query_value",
+              "autoscale": false,
+              "precision": 0,
+              "requests": [
+                {
+                  "response_format": "scalar",
+                  "queries": [
+                    {
+                      "data_source": "metrics",
+                      "name": "r",
+                      "query": "sum:kubernetes.containers.restarts{kube_namespace:lab}",
+                      "aggregator": "last"
+                    }
+                  ],
+                  "formulas": [
+                    {
+                      "formula": "r"
+                    }
+                  ],
+                  "conditional_formats": [
+                    {
+                      "comparator": ">",
+                      "value": 0,
+                      "palette": "white_on_red"
+                    },
+                    {
+                      "comparator": "<=",
+                      "value": 0,
+                      "palette": "white_on_green"
+                    }
+                  ]
+                }
+              ]
+            },
+            "layout": {
+              "x": 8,
+              "y": 3,
+              "width": 4,
+              "height": 3
+            }
+          }
+        ]
+      },
+      "layout": {
+        "x": 0,
+        "y": 28,
+        "width": 12,
+        "height": 7
+      }
+    }
+  ],
+  "notify_list": []
+}

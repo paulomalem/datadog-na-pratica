@@ -1,0 +1,800 @@
+{
+  "title": "Lab Loja Datadog - Golden Signals",
+  "description": "Os 4 golden signals (latência, tráfego, erros e saturação) com filtros de env e service.",
+  "layout_type": "ordered",
+  "reflow_type": "fixed",
+  "template_variables": [
+    {
+      "name": "env",
+      "prefix": "env",
+      "defaults": [
+        "dev"
+      ],
+      "available_values": []
+    },
+    {
+      "name": "service",
+      "prefix": "service",
+      "defaults": [
+        "*"
+      ],
+      "available_values": []
+    }
+  ],
+  "widgets": [
+    {
+      "definition": {
+        "title": "Resumo (filtrado por env e service)",
+        "type": "group",
+        "layout_type": "ordered",
+        "background_color": "vivid_purple",
+        "show_title": true,
+        "widgets": [
+          {
+            "definition": {
+              "title": "Latência p95",
+              "title_size": "16",
+              "title_align": "left",
+              "type": "query_value",
+              "autoscale": false,
+              "precision": 0,
+              "requests": [
+                {
+                  "response_format": "scalar",
+                  "queries": [
+                    {
+                      "data_source": "metrics",
+                      "name": "p95",
+                      "query": "p95:trace.express.request{env:$env.value,service:$service.value}",
+                      "aggregator": "avg"
+                    }
+                  ],
+                  "formulas": [
+                    {
+                      "formula": "p95 * 1000"
+                    }
+                  ]
+                }
+              ],
+              "custom_unit": "ms"
+            },
+            "layout": {
+              "x": 0,
+              "y": 0,
+              "width": 3,
+              "height": 2
+            }
+          },
+          {
+            "definition": {
+              "title": "Tráfego (req/s)",
+              "title_size": "16",
+              "title_align": "left",
+              "type": "query_value",
+              "autoscale": false,
+              "precision": 2,
+              "requests": [
+                {
+                  "response_format": "scalar",
+                  "queries": [
+                    {
+                      "data_source": "metrics",
+                      "name": "h",
+                      "query": "sum:trace.express.request.hits{env:$env.value,service:$service.value}.as_rate()",
+                      "aggregator": "avg"
+                    }
+                  ],
+                  "formulas": [
+                    {
+                      "formula": "h"
+                    }
+                  ]
+                }
+              ],
+              "custom_unit": "req/s"
+            },
+            "layout": {
+              "x": 3,
+              "y": 0,
+              "width": 3,
+              "height": 2
+            }
+          },
+          {
+            "definition": {
+              "title": "Taxa de erro",
+              "title_size": "16",
+              "title_align": "left",
+              "type": "query_value",
+              "autoscale": false,
+              "precision": 2,
+              "requests": [
+                {
+                  "response_format": "scalar",
+                  "queries": [
+                    {
+                      "data_source": "metrics",
+                      "name": "e",
+                      "query": "sum:trace.express.request.errors{env:$env.value,service:$service.value}.as_count()",
+                      "aggregator": "sum"
+                    },
+                    {
+                      "data_source": "metrics",
+                      "name": "h",
+                      "query": "sum:trace.express.request.hits{env:$env.value,service:$service.value}.as_count()",
+                      "aggregator": "sum"
+                    }
+                  ],
+                  "formulas": [
+                    {
+                      "formula": "100 * e / h"
+                    }
+                  ],
+                  "conditional_formats": [
+                    {
+                      "comparator": ">=",
+                      "value": 5,
+                      "palette": "white_on_red"
+                    },
+                    {
+                      "comparator": ">=",
+                      "value": 1,
+                      "palette": "white_on_yellow"
+                    },
+                    {
+                      "comparator": "<",
+                      "value": 1,
+                      "palette": "white_on_green"
+                    }
+                  ]
+                }
+              ],
+              "custom_unit": "%"
+            },
+            "layout": {
+              "x": 6,
+              "y": 0,
+              "width": 3,
+              "height": 2
+            }
+          },
+          {
+            "definition": {
+              "title": "Saturação: memória (média dos pods)",
+              "title_size": "16",
+              "title_align": "left",
+              "type": "query_value",
+              "autoscale": false,
+              "precision": 0,
+              "requests": [
+                {
+                  "response_format": "scalar",
+                  "queries": [
+                    {
+                      "data_source": "metrics",
+                      "name": "m",
+                      "query": "avg:kubernetes.memory.working_set{kube_namespace:lab,kube_service:$service.value}",
+                      "aggregator": "avg"
+                    }
+                  ],
+                  "formulas": [
+                    {
+                      "formula": "m / 1048576"
+                    }
+                  ]
+                }
+              ],
+              "custom_unit": "MiB"
+            },
+            "layout": {
+              "x": 9,
+              "y": 0,
+              "width": 3,
+              "height": 2
+            }
+          }
+        ]
+      },
+      "layout": {
+        "x": 0,
+        "y": 0,
+        "width": 12,
+        "height": 3
+      }
+    },
+    {
+      "definition": {
+        "title": "1. Latência",
+        "type": "group",
+        "layout_type": "ordered",
+        "background_color": "vivid_orange",
+        "show_title": true,
+        "widgets": [
+          {
+            "definition": {
+              "title": "Latência p50 / p95 / p99 por serviço (s)",
+              "title_size": "16",
+              "title_align": "left",
+              "type": "timeseries",
+              "show_legend": true,
+              "legend_layout": "auto",
+              "legend_columns": [
+                "avg",
+                "max",
+                "value"
+              ],
+              "requests": [
+                {
+                  "response_format": "timeseries",
+                  "queries": [
+                    {
+                      "data_source": "metrics",
+                      "name": "p50",
+                      "query": "p50:trace.express.request{env:$env.value,service:$service.value} by {service}"
+                    },
+                    {
+                      "data_source": "metrics",
+                      "name": "p95",
+                      "query": "p95:trace.express.request{env:$env.value,service:$service.value} by {service}"
+                    },
+                    {
+                      "data_source": "metrics",
+                      "name": "p99",
+                      "query": "p99:trace.express.request{env:$env.value,service:$service.value} by {service}"
+                    }
+                  ],
+                  "formulas": [
+                    {
+                      "formula": "p50"
+                    },
+                    {
+                      "formula": "p95"
+                    },
+                    {
+                      "formula": "p99"
+                    }
+                  ],
+                  "style": {
+                    "palette": "warm",
+                    "line_type": "solid",
+                    "line_width": "normal"
+                  },
+                  "display_type": "line"
+                }
+              ],
+              "yaxis": {
+                "label": "segundos",
+                "include_zero": true,
+                "scale": "linear"
+              }
+            },
+            "layout": {
+              "x": 0,
+              "y": 0,
+              "width": 8,
+              "height": 3
+            }
+          },
+          {
+            "definition": {
+              "title": "Latência média por serviço (s)",
+              "title_size": "16",
+              "title_align": "left",
+              "type": "timeseries",
+              "show_legend": true,
+              "legend_layout": "auto",
+              "legend_columns": [
+                "avg",
+                "max",
+                "value"
+              ],
+              "requests": [
+                {
+                  "response_format": "timeseries",
+                  "queries": [
+                    {
+                      "data_source": "metrics",
+                      "name": "avg",
+                      "query": "avg:trace.express.request{env:$env.value,service:$service.value} by {service}"
+                    }
+                  ],
+                  "formulas": [
+                    {
+                      "formula": "avg"
+                    }
+                  ],
+                  "style": {
+                    "palette": "orange",
+                    "line_type": "solid",
+                    "line_width": "normal"
+                  },
+                  "display_type": "area"
+                }
+              ]
+            },
+            "layout": {
+              "x": 8,
+              "y": 0,
+              "width": 4,
+              "height": 3
+            }
+          }
+        ]
+      },
+      "layout": {
+        "x": 0,
+        "y": 3,
+        "width": 12,
+        "height": 4
+      }
+    },
+    {
+      "definition": {
+        "title": "2. Tráfego",
+        "type": "group",
+        "layout_type": "ordered",
+        "background_color": "vivid_blue",
+        "show_title": true,
+        "widgets": [
+          {
+            "definition": {
+              "title": "Requests por segundo por serviço",
+              "title_size": "16",
+              "title_align": "left",
+              "type": "timeseries",
+              "show_legend": true,
+              "legend_layout": "auto",
+              "legend_columns": [
+                "avg",
+                "max",
+                "value"
+              ],
+              "requests": [
+                {
+                  "response_format": "timeseries",
+                  "queries": [
+                    {
+                      "data_source": "metrics",
+                      "name": "rps",
+                      "query": "sum:trace.express.request.hits{env:$env.value,service:$service.value} by {service}.as_rate()"
+                    }
+                  ],
+                  "formulas": [
+                    {
+                      "formula": "rps"
+                    }
+                  ],
+                  "style": {
+                    "palette": "dog_classic",
+                    "line_type": "solid",
+                    "line_width": "normal"
+                  },
+                  "display_type": "line"
+                }
+              ]
+            },
+            "layout": {
+              "x": 0,
+              "y": 0,
+              "width": 6,
+              "height": 3
+            }
+          },
+          {
+            "definition": {
+              "title": "Pedidos criados por status (por segundo)",
+              "title_size": "16",
+              "title_align": "left",
+              "type": "timeseries",
+              "show_legend": true,
+              "legend_layout": "auto",
+              "legend_columns": [
+                "avg",
+                "sum"
+              ],
+              "requests": [
+                {
+                  "response_format": "timeseries",
+                  "queries": [
+                    {
+                      "data_source": "metrics",
+                      "name": "pedidos",
+                      "query": "sum:lab.orders.created{env:$env.value,service:$service.value} by {status}.as_rate()"
+                    }
+                  ],
+                  "formulas": [
+                    {
+                      "formula": "pedidos"
+                    }
+                  ],
+                  "style": {
+                    "palette": "cool",
+                    "line_type": "solid",
+                    "line_width": "normal"
+                  },
+                  "display_type": "bars"
+                }
+              ]
+            },
+            "layout": {
+              "x": 6,
+              "y": 0,
+              "width": 3,
+              "height": 3
+            }
+          },
+          {
+            "definition": {
+              "title": "Reservas de estoque por resultado (por segundo)",
+              "title_size": "16",
+              "title_align": "left",
+              "type": "timeseries",
+              "show_legend": true,
+              "legend_layout": "auto",
+              "legend_columns": [
+                "avg",
+                "sum"
+              ],
+              "requests": [
+                {
+                  "response_format": "timeseries",
+                  "queries": [
+                    {
+                      "data_source": "metrics",
+                      "name": "res",
+                      "query": "sum:lab.stock.reservations{env:$env.value,service:$service.value} by {result}.as_rate()"
+                    }
+                  ],
+                  "formulas": [
+                    {
+                      "formula": "res"
+                    }
+                  ],
+                  "style": {
+                    "palette": "green",
+                    "line_type": "solid",
+                    "line_width": "normal"
+                  },
+                  "display_type": "bars"
+                }
+              ]
+            },
+            "layout": {
+              "x": 9,
+              "y": 0,
+              "width": 3,
+              "height": 3
+            }
+          }
+        ]
+      },
+      "layout": {
+        "x": 0,
+        "y": 7,
+        "width": 12,
+        "height": 4
+      }
+    },
+    {
+      "definition": {
+        "title": "3. Erros",
+        "type": "group",
+        "layout_type": "ordered",
+        "background_color": "vivid_pink",
+        "show_title": true,
+        "widgets": [
+          {
+            "definition": {
+              "title": "Taxa de erro por serviço (%)",
+              "title_size": "16",
+              "title_align": "left",
+              "type": "timeseries",
+              "show_legend": true,
+              "legend_layout": "auto",
+              "legend_columns": [
+                "avg",
+                "max",
+                "value"
+              ],
+              "requests": [
+                {
+                  "response_format": "timeseries",
+                  "queries": [
+                    {
+                      "data_source": "metrics",
+                      "name": "e",
+                      "query": "sum:trace.express.request.errors{env:$env.value,service:$service.value} by {service}.as_count()"
+                    },
+                    {
+                      "data_source": "metrics",
+                      "name": "h",
+                      "query": "sum:trace.express.request.hits{env:$env.value,service:$service.value} by {service}.as_count()"
+                    }
+                  ],
+                  "formulas": [
+                    {
+                      "formula": "100 * e / h"
+                    }
+                  ],
+                  "style": {
+                    "palette": "warm",
+                    "line_type": "solid",
+                    "line_width": "normal"
+                  },
+                  "display_type": "line"
+                }
+              ],
+              "yaxis": {
+                "label": "%",
+                "include_zero": true,
+                "scale": "linear"
+              },
+              "markers": [
+                {
+                  "value": "y = 5",
+                  "display_type": "error dashed"
+                },
+                {
+                  "value": "y = 1",
+                  "display_type": "warning dashed"
+                }
+              ]
+            },
+            "layout": {
+              "x": 0,
+              "y": 0,
+              "width": 6,
+              "height": 3
+            }
+          },
+          {
+            "definition": {
+              "title": "Erros por serviço (contagem)",
+              "title_size": "16",
+              "title_align": "left",
+              "type": "timeseries",
+              "show_legend": true,
+              "legend_layout": "auto",
+              "legend_columns": [
+                "sum",
+                "value"
+              ],
+              "requests": [
+                {
+                  "response_format": "timeseries",
+                  "queries": [
+                    {
+                      "data_source": "metrics",
+                      "name": "e",
+                      "query": "sum:trace.express.request.errors{env:$env.value,service:$service.value} by {service}.as_count()"
+                    }
+                  ],
+                  "formulas": [
+                    {
+                      "formula": "e"
+                    }
+                  ],
+                  "style": {
+                    "palette": "warm",
+                    "line_type": "solid",
+                    "line_width": "normal"
+                  },
+                  "display_type": "bars"
+                }
+              ]
+            },
+            "layout": {
+              "x": 6,
+              "y": 0,
+              "width": 6,
+              "height": 3
+            }
+          },
+          {
+            "definition": {
+              "title": "Logs de erro",
+              "title_size": "16",
+              "title_align": "left",
+              "type": "list_stream",
+              "requests": [
+                {
+                  "response_format": "event_list",
+                  "query": {
+                    "data_source": "logs_stream",
+                    "query_string": "env:$env.value service:$service.value status:error",
+                    "indexes": [],
+                    "storage": "hot",
+                    "sort": {
+                      "column": "time",
+                      "order": "desc"
+                    }
+                  },
+                  "columns": [
+                    {
+                      "field": "status_line",
+                      "width": "auto"
+                    },
+                    {
+                      "field": "timestamp",
+                      "width": "auto"
+                    },
+                    {
+                      "field": "service",
+                      "width": "auto"
+                    },
+                    {
+                      "field": "content",
+                      "width": "compact"
+                    }
+                  ]
+                }
+              ]
+            },
+            "layout": {
+              "x": 0,
+              "y": 3,
+              "width": 12,
+              "height": 4
+            }
+          }
+        ]
+      },
+      "layout": {
+        "x": 0,
+        "y": 11,
+        "width": 12,
+        "height": 8
+      }
+    },
+    {
+      "definition": {
+        "title": "4. Saturação",
+        "type": "group",
+        "layout_type": "ordered",
+        "background_color": "vivid_green",
+        "show_title": true,
+        "widgets": [
+          {
+            "definition": {
+              "title": "CPU por serviço (nanocores)",
+              "title_size": "16",
+              "title_align": "left",
+              "type": "timeseries",
+              "show_legend": true,
+              "legend_layout": "auto",
+              "legend_columns": [
+                "avg",
+                "max",
+                "value"
+              ],
+              "requests": [
+                {
+                  "response_format": "timeseries",
+                  "queries": [
+                    {
+                      "data_source": "metrics",
+                      "name": "cpu",
+                      "query": "avg:kubernetes.cpu.usage.total{kube_namespace:lab,kube_service:$service.value} by {kube_service}"
+                    }
+                  ],
+                  "formulas": [
+                    {
+                      "formula": "cpu"
+                    }
+                  ],
+                  "style": {
+                    "palette": "purple",
+                    "line_type": "solid",
+                    "line_width": "normal"
+                  },
+                  "display_type": "line"
+                }
+              ]
+            },
+            "layout": {
+              "x": 0,
+              "y": 0,
+              "width": 4,
+              "height": 3
+            }
+          },
+          {
+            "definition": {
+              "title": "Memória (working set) por serviço (bytes)",
+              "title_size": "16",
+              "title_align": "left",
+              "type": "timeseries",
+              "show_legend": true,
+              "legend_layout": "auto",
+              "legend_columns": [
+                "avg",
+                "max",
+                "value"
+              ],
+              "requests": [
+                {
+                  "response_format": "timeseries",
+                  "queries": [
+                    {
+                      "data_source": "metrics",
+                      "name": "mem",
+                      "query": "avg:kubernetes.memory.working_set{kube_namespace:lab,kube_service:$service.value} by {kube_service}"
+                    }
+                  ],
+                  "formulas": [
+                    {
+                      "formula": "mem"
+                    }
+                  ],
+                  "style": {
+                    "palette": "purple",
+                    "line_type": "solid",
+                    "line_width": "normal"
+                  },
+                  "display_type": "line"
+                }
+              ]
+            },
+            "layout": {
+              "x": 4,
+              "y": 0,
+              "width": 4,
+              "height": 3
+            }
+          },
+          {
+            "definition": {
+              "title": "Pedidos em processamento (in-flight)",
+              "title_size": "16",
+              "title_align": "left",
+              "type": "timeseries",
+              "show_legend": true,
+              "legend_layout": "auto",
+              "legend_columns": [
+                "avg",
+                "max",
+                "value"
+              ],
+              "requests": [
+                {
+                  "response_format": "timeseries",
+                  "queries": [
+                    {
+                      "data_source": "metrics",
+                      "name": "inf",
+                      "query": "max:lab.orders.in_flight{env:$env.value,service:$service.value} by {service}"
+                    }
+                  ],
+                  "formulas": [
+                    {
+                      "formula": "inf"
+                    }
+                  ],
+                  "style": {
+                    "palette": "cool",
+                    "line_type": "solid",
+                    "line_width": "normal"
+                  },
+                  "display_type": "area"
+                }
+              ]
+            },
+            "layout": {
+              "x": 8,
+              "y": 0,
+              "width": 4,
+              "height": 3
+            }
+          }
+        ]
+      },
+      "layout": {
+        "x": 0,
+        "y": 19,
+        "width": 12,
+        "height": 4
+      }
+    }
+  ],
+  "notify_list": []
+}

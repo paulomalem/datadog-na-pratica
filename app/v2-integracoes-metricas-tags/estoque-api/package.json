@@ -1,0 +1,16 @@
+{
+  "name": "estoque-api",
+  "version": "1.0.0",
+  "private": true,
+  "main": "src/main.js",
+  "scripts": {
+    "start": "node src/main.js",
+    "test": "node --test"
+  },
+  "dependencies": {
+    "express": "^4.21.2",
+    "hot-shots": "^10.2.1",
+    "pg": "^8.13.1",
+    "swagger-ui-express": "^5.0.1"
+  }
+}

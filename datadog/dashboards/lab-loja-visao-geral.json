@@ -1,0 +1,225 @@
+{
+  "title": "Lab Loja Datadog - Visão geral",
+  "description": "Visão geral da aplicação Lab Loja Datadog (pedidos-api e estoque-api), env:dev.",
+  "layout_type": "ordered",
+  "reflow_type": "fixed",
+  "widgets": [
+    {
+      "definition": {
+        "title": "Requests por segundo",
+        "title_size": "16",
+        "title_align": "left",
+        "type": "timeseries",
+        "show_legend": true,
+        "legend_layout": "auto",
+        "legend_columns": ["avg", "max", "value"],
+        "requests": [
+          {
+            "response_format": "timeseries",
+            "queries": [
+              {
+                "data_source": "metrics",
+                "name": "hits",
+                "query": "sum:trace.express.request.hits{env:dev AND (service:pedidos-api OR service:estoque-api)} by {service}.as_rate()"
+              }
+            ],
+            "formulas": [{ "formula": "hits" }],
+            "style": { "palette": "dog_classic", "line_type": "solid", "line_width": "normal" },
+            "display_type": "line"
+          }
+        ]
+      },
+      "layout": { "x": 0, "y": 0, "width": 6, "height": 3 }
+    },
+    {
+      "definition": {
+        "title": "Latência p95",
+        "title_size": "16",
+        "title_align": "left",
+        "type": "timeseries",
+        "show_legend": true,
+        "legend_layout": "auto",
+        "legend_columns": ["avg", "max", "value"],
+        "requests": [
+          {
+            "response_format": "timeseries",
+            "queries": [
+              {
+                "data_source": "metrics",
+                "name": "p95",
+                "query": "p95:trace.express.request{env:dev AND (service:pedidos-api OR service:estoque-api)} by {service}"
+              }
+            ],
+            "formulas": [{ "formula": "p95" }],
+            "style": { "palette": "warm", "line_type": "solid", "line_width": "normal" },
+            "display_type": "line"
+          }
+        ],
+        "yaxis": { "label": "segundos", "include_zero": true, "scale": "linear" }
+      },
+      "layout": { "x": 6, "y": 0, "width": 6, "height": 3 }
+    },
+    {
+      "definition": {
+        "title": "Taxa de erro - pedidos-api",
+        "title_size": "16",
+        "title_align": "left",
+        "type": "query_value",
+        "autoscale": false,
+        "precision": 2,
+        "custom_unit": "%",
+        "requests": [
+          {
+            "response_format": "scalar",
+            "queries": [
+              {
+                "data_source": "metrics",
+                "name": "errors",
+                "query": "sum:trace.express.request.errors{env:dev,service:pedidos-api}.as_count()",
+                "aggregator": "sum"
+              },
+              {
+                "data_source": "metrics",
+                "name": "hits",
+                "query": "sum:trace.express.request.hits{env:dev,service:pedidos-api}.as_count()",
+                "aggregator": "sum"
+              }
+            ],
+            "formulas": [{ "formula": "100 * errors / hits" }],
+            "conditional_formats": [
+              { "comparator": ">=", "value": 5, "palette": "white_on_red" },
+              { "comparator": ">=", "value": 1, "palette": "white_on_yellow" },
+              { "comparator": "<", "value": 1, "palette": "white_on_green" }
+            ]
+          }
+        ]
+      },
+      "layout": { "x": 0, "y": 3, "width": 3, "height": 2 }
+    },
+    {
+      "definition": {
+        "title": "Taxa de erro - estoque-api",
+        "title_size": "16",
+        "title_align": "left",
+        "type": "query_value",
+        "autoscale": false,
+        "precision": 2,
+        "custom_unit": "%",
+        "requests": [
+          {
+            "response_format": "scalar",
+            "queries": [
+              {
+                "data_source": "metrics",
+                "name": "errors",
+                "query": "sum:trace.express.request.errors{env:dev,service:estoque-api}.as_count()",
+                "aggregator": "sum"
+              },
+              {
+                "data_source": "metrics",
+                "name": "hits",
+                "query": "sum:trace.express.request.hits{env:dev,service:estoque-api}.as_count()",
+                "aggregator": "sum"
+              }
+            ],
+            "formulas": [{ "formula": "100 * errors / hits" }],
+            "conditional_formats": [
+              { "comparator": ">=", "value": 5, "palette": "white_on_red" },
+              { "comparator": ">=", "value": 1, "palette": "white_on_yellow" },
+              { "comparator": "<", "value": 1, "palette": "white_on_green" }
+            ]
+          }
+        ]
+      },
+      "layout": { "x": 3, "y": 3, "width": 3, "height": 2 }
+    },
+    {
+      "definition": {
+        "title": "Top 5 SKUs mais vendidos (reservas ok)",
+        "title_size": "16",
+        "title_align": "left",
+        "type": "toplist",
+        "requests": [
+          {
+            "response_format": "scalar",
+            "queries": [
+              {
+                "data_source": "metrics",
+                "name": "reservas",
+                "query": "sum:lab.stock.reservations{env:dev,result:ok} by {sku}.as_count()",
+                "aggregator": "sum"
+              }
+            ],
+            "formulas": [
+              {
+                "formula": "reservas",
+                "limit": { "count": 5, "order": "desc" }
+              }
+            ],
+            "sort": {
+              "count": 5,
+              "order_by": [{ "type": "formula", "index": 0, "order": "desc" }]
+            }
+          }
+        ]
+      },
+      "layout": { "x": 6, "y": 3, "width": 6, "height": 2 }
+    },
+    {
+      "definition": {
+        "title": "Pedidos por status",
+        "title_size": "16",
+        "title_align": "left",
+        "type": "timeseries",
+        "show_legend": true,
+        "legend_layout": "auto",
+        "legend_columns": ["sum", "value"],
+        "requests": [
+          {
+            "response_format": "timeseries",
+            "queries": [
+              {
+                "data_source": "metrics",
+                "name": "pedidos",
+                "query": "sum:lab.orders.created{env:dev} by {status}.as_count()"
+              }
+            ],
+            "formulas": [{ "formula": "pedidos" }],
+            "style": { "palette": "cool" },
+            "display_type": "bars"
+          }
+        ]
+      },
+      "layout": { "x": 0, "y": 5, "width": 12, "height": 3 }
+    },
+    {
+      "definition": {
+        "title": "Logs de erro - pedidos-api e estoque-api",
+        "title_size": "16",
+        "title_align": "left",
+        "type": "list_stream",
+        "requests": [
+          {
+            "response_format": "event_list",
+            "query": {
+              "data_source": "logs_stream",
+              "query_string": "env:dev status:error (service:pedidos-api OR service:estoque-api)",
+              "indexes": [],
+              "storage": "hot",
+              "sort": { "column": "time", "order": "desc" }
+            },
+            "columns": [
+              { "field": "status_line", "width": "auto" },
+              { "field": "timestamp", "width": "auto" },
+              { "field": "service", "width": "auto" },
+              { "field": "content", "width": "compact" }
+            ]
+          }
+        ]
+      },
+      "layout": { "x": 0, "y": 8, "width": 12, "height": 5 }
+    }
+  ],
+  "template_variables": [],
+  "notify_list": []
+}

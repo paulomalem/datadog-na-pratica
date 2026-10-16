@@ -1,0 +1,21 @@
+{
+  "name": "Lab Loja - pedidos-api muitos logs de erro",
+  "type": "log alert",
+  "query": "logs(\"service:pedidos-api env:dev status:error\").index(\"*\").rollup(\"count\").last(\"5m\") > 20",
+  "message": "{{#is_alert}}🚨 **Mais de {{threshold}} logs de erro no `pedidos-api`** nos últimos 5 minutos (env:dev).\nQuantidade: **{{value}}**.\n{{/is_alert}}\n{{#is_recovery}}✅ Logs de erro do `pedidos-api` voltaram para até {{threshold}} em 5 minutos.{{/is_recovery}}\n\nO que checar:\n1. Logs: `service:pedidos-api env:dev status:error` (o link do monitor já abre filtrado)\n2. Traces com o mesmo `trace_id` dos logs de erro\n3. Chamadas ao `estoque-api` e ao `pedidos-db`\n4. Dashboard \"Lab Loja Datadog - Visão geral (v2)\", seção SRE",
+  "tags": ["env:dev", "service:pedidos-api", "team:lab-loja", "source:logs"],
+  "priority": null,
+  "options": {
+    "thresholds": {
+      "critical": 20
+    },
+    "enable_logs_sample": true,
+    "groupby_simple_monitor": false,
+    "notify_no_data": false,
+    "notify_audit": false,
+    "require_full_window": false,
+    "include_tags": true,
+    "renotify_interval": 0,
+    "evaluation_delay": 60
+  }
+}

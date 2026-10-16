@@ -1,0 +1,53 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: loja-web
+  namespace: lab
+  labels:
+    app: loja-web
+    tags.datadoghq.com/env: dev
+    tags.datadoghq.com/service: loja-web
+    tags.datadoghq.com/version: "3.0.0"
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: loja-web
+  template:
+    metadata:
+      labels:
+        app: loja-web
+        tags.datadoghq.com/env: dev
+        tags.datadoghq.com/service: loja-web
+        tags.datadoghq.com/version: "3.0.0"
+    spec:
+      containers:
+        - name: loja-web
+          image: dd-lab/loja-web:v3
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 8080
+          env:
+            - name: PEDIDOS_API_URL
+              value: "http://localhost:8081"
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 8080
+            periodSeconds: 5
+          resources:
+            requests:
+              cpu: 20m
+              memory: 64Mi
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: loja-web
+  namespace: lab
+spec:
+  selector:
+    app: loja-web
+  ports:
+    - port: 8080
+      targetPort: 8080

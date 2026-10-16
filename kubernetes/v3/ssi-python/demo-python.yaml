@@ -1,0 +1,89 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: demo-python
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: demo-python-app
+  namespace: demo-python
+data:
+  app.py: |
+    import time
+    from flask import Flask
+
+    app = Flask(__name__)
+
+    @app.route("/")
+    def home():
+        return {"service": "demo-python", "status": "ok"}
+
+    @app.route("/slow")
+    def slow():
+        time.sleep(0.4)
+        return {"service": "demo-python", "slow": True}
+
+    app.run(host="0.0.0.0", port=5000)
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: demo-python
+  namespace: demo-python
+  labels:
+    app: demo-python
+    tags.datadoghq.com/env: dev
+    tags.datadoghq.com/service: demo-python
+    tags.datadoghq.com/version: "1.0.0"
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: demo-python
+  template:
+    metadata:
+      labels:
+        app: demo-python
+        tags.datadoghq.com/env: dev
+        tags.datadoghq.com/service: demo-python
+        tags.datadoghq.com/version: "1.0.0"
+    spec:
+      containers:
+        - name: demo-python
+          image: python:3.12-slim
+          command:
+            - "sh"
+            - "-c"
+            - "pip install --no-cache-dir -q flask && python /app/app.py"
+          ports:
+            - containerPort: 5000
+          readinessProbe:
+            httpGet:
+              path: /
+              port: 5000
+            initialDelaySeconds: 10
+            periodSeconds: 5
+          volumeMounts:
+            - name: app
+              mountPath: /app
+          resources:
+            requests:
+              cpu: 50m
+              memory: 128Mi
+      volumes:
+        - name: app
+          configMap:
+            name: demo-python-app
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: demo-python
+  namespace: demo-python
+spec:
+  selector:
+    app: demo-python
+  ports:
+    - port: 5000
+      targetPort: 5000

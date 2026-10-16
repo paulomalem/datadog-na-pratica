@@ -1,0 +1,9 @@
+# Cluster final do curso (v5): control-plane + 1 worker.
+# O control-plane tem taint (NoSchedule): os pods da aplicação e o Agent do Datadog rodam só no worker.
+# Com um único Agent, o NPM (System Probe) funciona sem taint/drain.
+kind: Cluster
+apiVersion: kind.x-k8s.io/v1alpha4
+name: lab-datadog
+nodes:
+  - role: control-plane
+  - role: worker

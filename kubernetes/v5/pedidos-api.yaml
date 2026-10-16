@@ -1,0 +1,71 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: pedidos-api
+  namespace: lab
+  labels:
+    app: pedidos-api
+    tags.datadoghq.com/env: dev
+    tags.datadoghq.com/service: pedidos-api
+    tags.datadoghq.com/version: "5.0.0"
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: pedidos-api
+  template:
+    metadata:
+      labels:
+        app: pedidos-api
+        tags.datadoghq.com/env: dev
+        tags.datadoghq.com/service: pedidos-api
+        tags.datadoghq.com/version: "5.0.0"
+    spec:
+      containers:
+        - name: pedidos-api
+          image: dd-lab/pedidos-api:v5
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 3001
+          env:
+            - name: DD_ENV
+              value: dev
+            - name: DD_SERVICE
+              value: pedidos-api
+            - name: DD_VERSION
+              value: "5.0.0"
+            - name: DD_AGENT_HOST
+              valueFrom:
+                fieldRef:
+                  fieldPath: status.hostIP
+            - name: DD_PROFILING_ENABLED
+              value: "true"
+            - name: DD_RUNTIME_METRICS_ENABLED
+              value: "true"
+            - name: REGION
+              value: br-sul
+            - name: PGHOST
+              value: pedidos-db
+            - name: ESTOQUE_API_URL
+              value: "http://estoque-api:3002"
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 3001
+            periodSeconds: 5
+          resources:
+            requests:
+              cpu: 50m
+              memory: 128Mi
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: pedidos-api
+  namespace: lab
+spec:
+  selector:
+    app: pedidos-api
+  ports:
+    - port: 3001
+      targetPort: 3001

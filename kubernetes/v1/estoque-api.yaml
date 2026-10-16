@@ -1,0 +1,47 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: estoque-api
+  namespace: lab
+  labels:
+    app: estoque-api
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: estoque-api
+  template:
+    metadata:
+      labels:
+        app: estoque-api
+    spec:
+      containers:
+        - name: estoque-api
+          image: dd-lab/estoque-api:v1
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 3002
+          env:
+            - name: PGHOST
+              value: estoque-db
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 3002
+            periodSeconds: 5
+          resources:
+            requests:
+              cpu: 50m
+              memory: 128Mi
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: estoque-api
+  namespace: lab
+spec:
+  selector:
+    app: estoque-api
+  ports:
+    - port: 3002
+      targetPort: 3002

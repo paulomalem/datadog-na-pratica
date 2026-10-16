@@ -1,0 +1,93 @@
+# OpenTelemetry Collector entre o estoque-api (OpenTelemetry) e o Datadog.
+# Receptor OTLP/HTTP -> processador batch -> exporters: datadog (envia ao Datadog) e debug (mostra no log do Collector).
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: otel-collector-config
+  namespace: lab
+data:
+  config.yaml: |
+    receivers:
+      otlp:
+        protocols:
+          http:
+            endpoint: 0.0.0.0:4318
+    processors:
+      batch: {}
+    connectors:
+      datadog/connector:
+    exporters:
+      datadog:
+        api:
+          key: ${env:DD_API_KEY}
+          site: ${env:DD_SITE}
+        host_metadata:
+          enabled: false
+      debug:
+        verbosity: basic 
+    service:
+      pipelines:
+        traces:
+          receivers: [otlp]
+          processors: [batch]
+          exporters: [datadog/connector, datadog, debug]
+        metrics:
+          receivers: [datadog/connector]
+          processors: [batch]
+          exporters: [datadog]
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: otel-collector
+  namespace: lab
+  labels:
+    app: otel-collector
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: otel-collector
+  template:
+    metadata:
+      labels:
+        app: otel-collector
+    spec:
+      containers:
+        - name: otel-collector
+          image: otel/opentelemetry-collector-contrib:0.116.1
+          args:
+            - "--config=/etc/otelcol/config.yaml"
+          ports:
+            - containerPort: 4318
+          env:
+            - name: DD_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: datadog-secret
+                  key: api-key
+            - name: DD_SITE
+              value: datadoghq.com
+          volumeMounts:
+            - name: config
+              mountPath: /etc/otelcol
+          resources:
+            requests:
+              cpu: 50m
+              memory: 128Mi
+      volumes:
+        - name: config
+          configMap:
+            name: otel-collector-config
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: otel-collector
+  namespace: lab
+spec:
+  selector:
+    app: otel-collector
+  ports:
+    - port: 4318
+      targetPort: 4318
