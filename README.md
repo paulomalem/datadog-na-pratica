@@ -30,6 +30,54 @@ O objetivo é que você possa reproduzir cada aula no seu próprio cluster Kind 
 
 ---
 
+## Arquitetura
+
+<div align="center">
+
+<img src="img/final.svg" alt="Arquitetura completa: aplicação no Kind, Datadog Agent, OpenTelemetry Collector e a plataforma do Datadog" width="100%">
+
+<sub>Visão completa. As setas animadas mostram o sentido do fluxo de dados.</sub>
+
+</div>
+
+### Como a arquitetura evolui
+
+Montamos o ambiente por camadas. Cada diagrama abaixo acrescenta uma peça ao anterior.
+
+#### 1. A aplicação
+
+`loja-web` chama `pedidos-api`, que chama `estoque-api`. Cada API tem o seu PostgreSQL, e o `gerador-carga` produz tráfego para os dados aparecerem.
+
+<div align="center">
+  <img src="img/app.svg" alt="Aplicação Lab Loja Datadog: loja-web, pedidos-api, estoque-api e os dois bancos PostgreSQL" width="100%">
+</div>
+
+#### 2. Aplicação e infraestrutura local
+
+A mesma aplicação rodando em um cluster Kind (1 control plane e 2 workers), no seu computador.
+
+<div align="center">
+  <img src="img/local.svg" alt="Aplicação rodando no cluster Kind local, com control plane e dois workers" width="100%">
+</div>
+
+#### 3. Datadog Agents
+
+O Datadog Agent roda como DaemonSet, um por nó, e coleta métricas, logs e traces dos pods. Ele envia tudo para a plataforma do Datadog.
+
+<div align="center">
+  <img src="img/datadog-agents.svg" alt="Datadog Agent em cada nó do Kind enviando dados para a plataforma do Datadog" width="100%">
+</div>
+
+#### 4. Cenário misto: Datadog Agent + OpenTelemetry
+
+Um serviço continua com o SDK do Datadog (`dd-trace`) e outro usa OpenTelemetry, enviando os dados ao Collector. Os dois caminhos chegam ao mesmo trace no Datadog.
+
+<div align="center">
+  <img src="img/datadog-agents-opentelemetry.svg" alt="Cenário misto: Datadog Agent e OpenTelemetry Collector enviando dados ao Datadog" width="100%">
+</div>
+
+---
+
 ## Pré-requisitos
 
 - Docker instalado e funcionando (com Compose)
@@ -50,7 +98,8 @@ O objetivo é que você possa reproduzir cada aula no seu próprio cluster Kind 
 | [`datadog/`](datadog) | Valores do Helm do Agent por fase do curso, dashboards e monitors em JSON |
 | [`COMANDOS.md`](COMANDOS.md) | Todos os comandos usados em aula, agrupados por assunto |
 | [`PROMPTS-CLAUDE.md`](PROMPTS-CLAUDE.md) | Os prompts usados com o Claude e o MCP do Datadog |
-| [`arch.drawio`](arch.drawio) | Diagrama de arquitetura |
+| [`arch.drawio`](arch.drawio) | Diagramas de arquitetura (editáveis no draw.io) |
+| [`img/`](img) | Os diagramas exportados em SVG animado, usados neste README |
 | [`.env.example`](.env.example) | Modelo do `.env` (só valores fictícios) |
 
 Cada serviço da aplicação tem Swagger em `/docs` e segue Clean Architecture.
