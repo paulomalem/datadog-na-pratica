@@ -25,13 +25,31 @@ O Agent precisa estar com o DogStatsD aberto (`datadog/v3-dogstatsd.yaml`).
 
 São 5 métricas, enviadas por **DogStatsD** (UDP, porta 8125 do Agent do nó). Todas levam as tags `env`, `service` e `version`.
 
-| Métrica | Tipo | O que mede | Tags extras | Onde está no código |
-|---|---|---|---|
-| `lab.orders.created` | count | Pedidos finalizados, por resultado | `status` (`confirmed` ou `failed`) | `pedidos-api/src/application/createOrder.js` |
-| `lab.orders.processing_ms` | distribution | Tempo para criar o pedido (banco + estoque), em ms | `status` | `createOrder.js` |
-| `lab.orders.in_flight` | gauge | Pedidos em andamento neste instante | nenhuma | `createOrder.js` |
-| `lab.stock.reservations` | count | Reservas de estoque, por SKU e resultado | `sku`, `result` (`ok`, `insufficient` ou `error`) | `estoque-api/src/application/reserveStock.js` |
-| `lab.stock.reserve_ms` | distribution | Tempo da reserva no estoque, em ms | `result` | `reserveStock.js` |
+- **`lab.orders.created`**
+  - Tipo: count
+  - O que mede: pedidos finalizados, por resultado
+  - Tags extras: `status` (`confirmed` ou `failed`)
+  - Código: `pedidos-api/src/application/createOrder.js`
+- **`lab.orders.processing_ms`**
+  - Tipo: distribution
+  - O que mede: tempo para criar o pedido (banco + estoque), em ms
+  - Tags extras: `status`
+  - Código: `pedidos-api/src/application/createOrder.js`
+- **`lab.orders.in_flight`**
+  - Tipo: gauge
+  - O que mede: pedidos em andamento neste instante
+  - Tags extras: nenhuma
+  - Código: `pedidos-api/src/application/createOrder.js`
+- **`lab.stock.reservations`**
+  - Tipo: count
+  - O que mede: reservas de estoque, por SKU e resultado
+  - Tags extras: `sku`, `result` (`ok`, `insufficient` ou `error`)
+  - Código: `estoque-api/src/application/reserveStock.js`
+- **`lab.stock.reserve_ms`**
+  - Tipo: distribution
+  - O que mede: tempo da reserva no estoque, em ms
+  - Tags extras: `result`
+  - Código: `estoque-api/src/application/reserveStock.js`
 
 As métricas ficam no bloco `finally` dos casos de uso, então saem **sempre**, com sucesso ou com erro.
 
