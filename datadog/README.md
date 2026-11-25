@@ -42,7 +42,7 @@ set -a; . ./.env; set +a          # cria DD_API_KEY e DD_SITE no terminal, sem e
 echo "site: $DD_SITE"             # só o site; nunca imprima a chave
 ```
 
-## Passo 2: namespace e secret com a API Key
+## Passo 2: namespace e secrets
 
 A chave fica em um **Secret** do Kubernetes. Ela não vai dentro de nenhum arquivo do repositório.
 
@@ -50,6 +50,14 @@ A chave fica em um **Secret** do Kubernetes. Ela não vai dentro de nenhum arqui
 kubectl --context $CTX create namespace datadog
 kubectl --context $CTX -n datadog create secret generic datadog-secret --from-literal=api-key="$DD_API_KEY"
 ```
+
+O `v1.yaml` já vem preparado para monitorar o PostgreSQL e lê a senha do usuário `datadog` de um segundo Secret, o `postgres-monitoring`. Crie-o agora: sem ele, o container `agent` não sobe (`CreateContainerConfigError: secret "postgres-monitoring" not found`).
+
+```bash
+kubectl --context $CTX -n datadog create secret generic postgres-monitoring --from-literal=password=datadog_lab
+```
+
+A senha `datadog_lab` é só para o laboratório. Não use em ambiente real.
 
 ## Passo 3: repositório do chart
 
@@ -71,6 +79,7 @@ O Helm usa o arquivo `datadog/v1.yaml` para configurar o Agent. Abra-o e leia:
 | `ignoreAutoConfig` (`etcd`, `kube_controller_manager`, `kube_scheduler`) | No Kind esses componentes do control-plane não expõem métricas como num cluster gerenciado; sem isso o `agent status` mostra três erros de inicialização que não são problema real |
 | `logs.enabled` e `containerCollectAll` | Coleta os logs de todos os containers |
 | `apm.portEnabled: true` | Deixa a porta de APM do Agent aberta, para quando a aplicação for instrumentada com APM |
+| `DD_POSTGRES_PASSWORD` | A senha do usuário `datadog` do PostgreSQL, lida do Secret `postgres-monitoring` do passo 2 |
 | `agents.tolerations` | O control-plane do Kind tem um *taint*; sem a tolerância o Agent só rodaria nos workers (2 hosts em vez de 3) |
 
 ## Passo 5: instalar
