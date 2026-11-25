@@ -136,6 +136,9 @@ kubectl config get-contexts -o name | grep "$CTX"           # confere que o cont
 # namespace e Secret com a API Key (a chave vem do .env)
 kubectl --context $CTX create namespace datadog
 kubectl --context $CTX -n datadog create secret generic datadog-secret --from-literal=api-key="$DD_API_KEY"
+
+# senha do usuário datadog do PostgreSQL: o v1.yaml já lê este Secret, e sem ele o Agent fica em CreateContainerConfigError
+kubectl --context $CTX -n datadog create secret generic postgres-monitoring --from-literal=password=datadog_lab
 kubectl --context $CTX -n datadog get secret
 
 # repositório do chart
@@ -240,7 +243,8 @@ kubectl -n lab create configmap orders-init --from-file=init.sql=db/orders/init.
 kubectl -n lab create configmap stock-init  --from-file=init.sql=db/stock/init.sql  --from-file=datadog.sql=db/stock/datadog.sql  --dry-run=client -o yaml | kubectl apply -f -
 
 # a senha do usuário datadog para o Agent (o arquivo de valores lê este Secret)
-kubectl -n datadog create secret generic postgres-monitoring --from-literal=password=datadog_lab
+# já criado na instalação do Agent (seção 8); se aparecer "already exists", está tudo certo
+kubectl --context $CTX -n datadog create secret generic postgres-monitoring --from-literal=password=datadog_lab
 
 # recriar os bancos para o SQL rodar (os dados de exemplo são recarregados)
 kubectl -n lab rollout restart deploy/pedidos-db deploy/estoque-db
